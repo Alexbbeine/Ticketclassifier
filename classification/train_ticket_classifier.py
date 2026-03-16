@@ -17,9 +17,11 @@ from transformers import (
     set_seed,
 )
 
+# Standardmäßig werden Titel und Beschreibung zu einem gemeinsamen Eingabetext zusammengeführt.
 TEXT_COLUMNS_DEFAULT = ["Titel", "Beschreibung"]
 
 
+# Standardmäßig werden Titel und Beschreibung zu einem gemeinsamen Eingabetext zusammengeführt.
 def read_table(path: Path, sheet_name: str = "Tabelle") -> pd.DataFrame:
     suffix = path.suffix.lower()
     if suffix == ".csv":
@@ -29,6 +31,7 @@ def read_table(path: Path, sheet_name: str = "Tabelle") -> pd.DataFrame:
     raise ValueError(f"Nicht unterstütztes Dateiformat: {suffix}")
 
 
+# Baut aus den angegebenen Textspalten einen gemeinsamen Text pro Zeile.
 def build_text(df: pd.DataFrame, text_cols: list[str]) -> pd.Series:
     return (
         df[text_cols]
@@ -39,6 +42,7 @@ def build_text(df: pd.DataFrame, text_cols: list[str]) -> pd.Series:
     )
 
 
+# Bereinigt den Datensatz, prüft Pflichtspalten und erzeugt die Zielstruktur mit Text und Label.
 def prepare_dataframe(df: pd.DataFrame, label_col: str, text_cols: list[str]) -> pd.DataFrame:
     required = text_cols + [label_col]
     missing = [c for c in required if c not in df.columns]
@@ -55,6 +59,7 @@ def prepare_dataframe(df: pd.DataFrame, label_col: str, text_cols: list[str]) ->
     return work
 
 
+# Prüft, ob jede Klasse im jeweiligen Split mindestens eine definierte Mindestanzahl an Beispielen hat.
 def ensure_min_class_counts(df: pd.DataFrame, split_name: str, minimum: int = 1) -> None:
     counts = df["label_text"].value_counts()
     too_small = counts[counts < minimum]
@@ -65,6 +70,7 @@ def ensure_min_class_counts(df: pd.DataFrame, split_name: str, minimum: int = 1)
         )
 
 
+# Wandelt Textlabels in numerische Label-IDs um und prüft, ob unbekannte Labels vorkommen.
 def add_label_ids(df: pd.DataFrame, label2id: dict[str, int]) -> pd.DataFrame:
     out = df.copy()
     out["label"] = out["label_text"].map(label2id)
@@ -78,6 +84,7 @@ def add_label_ids(df: pd.DataFrame, label2id: dict[str, int]) -> pd.DataFrame:
     return out
 
 
+# Entfernt exakte Dubletten zwischen Train-, Validierungs- und Testsplit, um Dopplungen zu vermeiden.
 def drop_cross_split_overlaps(train_df: pd.DataFrame, val_df: pd.DataFrame, test_df: pd.DataFrame):
     train_keys = set(zip(train_df["text"], train_df["label_text"]))
     val_keys_before = set(zip(val_df["text"], val_df["label_text"]))
@@ -104,6 +111,8 @@ def drop_cross_split_overlaps(train_df: pd.DataFrame, val_df: pd.DataFrame, test
     return train_df, val_df, test_df, overlap_info
 
 
+
+# Eigener Trainer, der optional Klassengewichte für unausgeglichene Klassenverteilungen berücksichtigt.
 class WeightedTrainer(Trainer):
     def __init__(self, class_weights: torch.Tensor | None = None, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -124,6 +133,7 @@ class WeightedTrainer(Trainer):
         return (loss, outputs) if return_outputs else loss
 
 
+# Berechnet Klassengewichte auf Basis der Häufigkeit der Labels im Trainingssplit.
 def compute_class_weights(y: pd.Series, label2id: dict[str, int]) -> torch.Tensor:
     counts = y.value_counts().to_dict()
     total = len(y)
@@ -135,10 +145,12 @@ def compute_class_weights(y: pd.Series, label2id: dict[str, int]) -> torch.Tenso
     return torch.tensor(weights, dtype=torch.float)
 
 
+# Berechnet Klassengewichte auf Basis der Häufigkeit der Labels im Trainingssplit.
 def to_dataset(df: pd.DataFrame) -> Dataset:
     return Dataset.from_pandas(df[["text", "label_text", "label"]], preserve_index=False)
 
 
+# Hauptfunktion: lädt Daten, bereitet sie auf, trainiert das Modell und speichert die Ergebnisse.
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--train-data", required=True, help="Pfad zur Trainingsdatei")
@@ -197,6 +209,7 @@ def main():
 
     tokenizer = AutoTokenizer.from_pretrained(args.model)
 
+    # Tokenisierung des Eingabetexts für das Transformer-Modell.
     def tokenize(batch):
         return tokenizer(batch["text"], truncation=True, max_length=args.max_length)
 
@@ -217,6 +230,7 @@ def main():
     if args.use_class_weights:
         class_weights = compute_class_weights(train_df["label_text"], label2id)
 
+    # Bewertungsmetriken für Validierung und Test.
     def compute_metrics(eval_pred):
         logits, labels_np = eval_pred
         preds = np.argmax(logits, axis=1)

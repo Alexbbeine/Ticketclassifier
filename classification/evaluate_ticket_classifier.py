@@ -17,7 +17,7 @@ from train_ticket_classifier import read_table, prepare_dataframe, add_label_ids
 
 TEXT_COLUMNS_DEFAULT = ["Titel", "Beschreibung"]
 
-
+# Hauptfunktion zur Auswertung eines bereits trainierten Modells auf einem separaten Testdatensatz.
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--test-data", required=True)
@@ -39,15 +39,18 @@ def main():
     label2id = {str(k): int(v) for k, v in model.config.label2id.items()}
     id2label = {int(k): str(v) for k, v in model.config.id2label.items()}
 
+    # Prüft, ob alle Labels im Testdatensatz auch im trainierten Modell bekannt sind.
     test_df = add_label_ids(test_df, label2id)
 
     test_ds = Dataset.from_pandas(test_df[["text", "label_text", "label"]], preserve_index=False)
 
+    # Tokenisiert den Testtext im gleichen Format wie beim Training.
     def tokenize(batch):
         return tokenizer(batch["text"], truncation=True, max_length=args.max_length)
 
     tokenized_test = test_ds.map(tokenize, batched=True, remove_columns=["text", "label_text"])
 
+    # Erstellt einen Trainer nur für die Evaluation und Vorhersage auf dem Testdatensatz.
     trainer = Trainer(
         model=model,
         args=TrainingArguments(
@@ -66,6 +69,7 @@ def main():
     y_true = pred_output.label_ids
     y_pred = np.argmax(pred_output.predictions, axis=1)
 
+    # Berechnet die wichtigsten Gütemaße für das Modell auf dem Testsplit.
     metrics = {
         **eval_metrics,
         "test_accuracy": accuracy_score(y_true, y_pred),
@@ -81,6 +85,7 @@ def main():
         zero_division=0,
     )
 
+    # Speichert Metriken und Klassifikationsbericht im Modellordner.
     (model_dir / "metrics_test.json").write_text(
         json.dumps(metrics, ensure_ascii=False, indent=2),
         encoding="utf-8",

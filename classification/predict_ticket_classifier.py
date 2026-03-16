@@ -6,12 +6,14 @@ import torch
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
 
+# Lädt ein trainiertes Modell und gibt für einen Text die vorhergesagte Klasse sowie die zugehörogen Wahrscheinlichkeiten zurück.
 def predict(model_dir: str, text: str, max_length: int = 192):
     model_path = Path(model_dir)
     tokenizer = AutoTokenizer.from_pretrained(model_path)
     model = AutoModelForSequenceClassification.from_pretrained(model_path)
     model.eval()
 
+    # Tokenisiert den Eingabetext im gleichen Format wie beim Training.
     inputs = tokenizer(text, truncation=True, max_length=max_length, return_tensors="pt")
     with torch.no_grad():
         outputs = model(**inputs)
