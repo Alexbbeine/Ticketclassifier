@@ -15,7 +15,7 @@ def predict(model_dir: str, text: str, max_length: int = 192):
         tokenizer = BertTokenizer.from_pretrained(model_path)
     else:
         tokenizer = AutoTokenizer.from_pretrained(model_path)
-        
+
     model = AutoModelForSequenceClassification.from_pretrained(model_path)
     model.eval()
 
@@ -43,7 +43,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--model-dir", required=True)
     parser.add_argument("--text", required=True)
-    parser.add_argument("--max-length", type=int, default=192)
+    parser.add_argument("--max-length", type=int, default=3000)
     args = parser.parse_args()
 
     result = predict(args.model_dir, args.text, max_length=args.max_length)

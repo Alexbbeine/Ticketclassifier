@@ -11,6 +11,8 @@ from transformers import (
     AutoModelForSequenceClassification,
     AutoTokenizer,
     BertTokenizer,
+    BertConfig,
+    BertForSequenceClassification,
     DataCollatorWithPadding,
     EarlyStoppingCallback,
     Trainer,
@@ -223,12 +225,24 @@ def main():
 
     data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
 
-    model = AutoModelForSequenceClassification.from_pretrained(
-        args.model,
-        num_labels=len(labels),
-        id2label=id2label,
-        label2id=label2id,
-    )
+    if "gbert" in args.model.lower() or "bert-base-german" in args.model.lower():
+        config = BertConfig.from_pretrained(
+            args.model,
+            num_labels=len(labels),
+            id2label=id2label,
+            label2id=label2id,
+        )
+        model = BertForSequenceClassification.from_pretrained(
+            args.model,
+            config=config,
+        )
+    else:
+        model = AutoModelForSequenceClassification.from_pretrained(
+            args.model,
+            num_labels=len(labels),
+            id2label=id2label,
+            label2id=label2id,
+        )
 
     class_weights = None
     if args.use_class_weights:
