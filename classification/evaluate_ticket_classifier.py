@@ -62,7 +62,6 @@ def main():
             output_dir=str(model_dir / "_eval_tmp"),
             per_device_eval_batch_size=args.eval_batch_size,
             report_to="none",
-            use_cpu=True,
         ),
         processing_class=tokenizer,
         data_collator=DataCollatorWithPadding(tokenizer=tokenizer),

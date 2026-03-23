@@ -127,6 +127,14 @@ class WeightedTrainer(Trainer):
         outputs = model(**inputs)
         logits = outputs.get("logits")
 
+        if not hasattr(self, "_printed_device"):
+            print("Trainer-Device:", self.args.device, flush=True)
+            print("Modell-Device im Trainer:", next(model.parameters()).device, flush=True)
+            print("Aktuelles Rechengerät im Forward-Pass:", logits.device, flush=True)
+            if torch.cuda.is_available():
+                print("GPU-Speicher belegt (MB):", torch.cuda.memory_allocated() / 1024**2, flush=True)
+            self._printed_device = True
+
         if self.class_weights is not None:
             weight = self.class_weights.to(logits.device)
             loss_fct = torch.nn.CrossEntropyLoss(weight=weight)
@@ -256,6 +264,10 @@ def main():
             label2id=label2id,
         )
 
+    # CUDA benutzen, wenn es verfügbar ist
+    if torch.cuda.is_available():
+        model = model.to("cuda")
+
     # Optional Klassengewichte berechnen, falls unausgeglichene Klassenverteilungen im Datensatz abgefedert werden sollen.
     class_weights = None
     if args.use_class_weights:
@@ -289,7 +301,7 @@ def main():
         logging_steps=25,
         report_to="none",
         dataloader_num_workers=0,
-        use_cpu=True,
+        fp16=True,
     )
 
     # Trainer mit optional gewichteter Vesrlustfunktion und Early Stopping erstellen.
@@ -304,6 +316,12 @@ def main():
         compute_metrics=compute_metrics,
         callbacks=[EarlyStoppingCallback(early_stopping_patience=2)],
     )
+
+    print("CUDA verfügbar:", torch.cuda.is_available(), flush=True)
+    if torch.cuda.is_available():
+        print("GPU:", torch.cuda.get_device_name(0), flush=True)
+    print("Trainer-Device:", trainer.args.device, flush=True)
+    print("Trainer-Modell-Device vor train():", next(trainer.model.parameters()).device, flush=True)
 
     # Modell trainieren und danach Modellgewichte sowie Tokenizer im Ausgabeordner speichern.
     trainer.train()
