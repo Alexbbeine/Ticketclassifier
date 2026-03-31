@@ -342,13 +342,13 @@ def print_summary(fetch_summary: dict, classification_summary: dict) -> None:
     print("\n--- Zusammenfassung Fetch-Stufe ---")
     print(f"Ausgelesen:      {fetch_summary['read']}")
     print(f"Gespeichert:     {fetch_summary['stored']}")
-    print(f"Uebersprungen:   {fetch_summary['skipped']}")
+    print(f"Übersprungen:   {fetch_summary['skipped']}")
     print(f"Fehler:          {fetch_summary['errors']}")
 
     print("\n--- Zusammenfassung Klassifikations-Stufe ---")
-    print(f"Geprueft:        {classification_summary['checked']}")
+    print(f"Geprüft:        {classification_summary['checked']}")
     print(f"Ticket erstellt: {classification_summary['ticketed']}")
-    print(f"Uebersprungen:   {classification_summary['skipped']}")
+    print(f"Übersprungen:   {classification_summary['skipped']}")
     print(f"Fehler:          {classification_summary['errors']}")
 
 
