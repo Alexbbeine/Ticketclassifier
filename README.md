@@ -346,4 +346,9 @@ Mögliche Weiterentwicklungen des Prototyps sind unter anderem:
 ---
 
 ## Autor und Kontext
-Diese README beschreibt einen im Rahmen einer Bachelorarbeit entwickelten Prototypen zur KI-gestützten Ticketvorbefüllung und RPA-Orchestrierung im Auftragsmanagement.
+
+Dieses Repository dokumentiert einen im Rahmen einer Bachelorarbeit entwickelten Prototypen zur automatisierten Vorverarbeitung eingehender E-Mails und zur strukturierten Ticketvorbefüllung für Azure DevOps Server.
+
+**Autor:** Alexander Beine
+**Institution:** Duale Hochschule Baden-Württemberg Stuttgart (DHBW Stuttgart)  
+**Kontext:** Bachelorarbeit im Studiengang Wirtschaftsinformatik
