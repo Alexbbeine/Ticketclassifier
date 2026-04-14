@@ -16,17 +16,18 @@ Der Prototyp wurde im Rahmen einer Bachelorarbeit entwickelt und verfolgt das Zi
 2. [Funktionsumfang](#funktionsumfang)
 3. [Technologiestack](#technologiestack)
 4. [Projektstruktur](#projektstruktur)
-5. [Voraussetzungen](#voraussetzungen)
-6. [Installation](#installation)
-7. [Konfiguration](#konfiguration)
-8. [Ausführung der Pipeline](#ausführung-der-pipeline)
-9. [Streamlit-Oberfläche](#streamlit-oberfläche)
-10. [Modelltraining](#modelltraining)
-11. [Modellevaluation](#modellevaluation)
-12. [Einzelvorhersage testen](#einzelvorhersage-testen)
-13. [Ablage und Ausgabedateien](#ablage-und-ausgabedateien)
-14. [Bekannte Einschränkungen](#bekannte-einschränkungen)
-15. [Weiterentwicklung](#weiterentwicklung)
+5. [Systemübersicht des Prototyps](#systemübersicht-des-prototyps)
+6. [Voraussetzungen](#voraussetzungen)
+7. [Installation](#installation)
+8. [Konfiguration](#konfiguration)
+9. [Ausführung der Pipeline](#ausführung-der-pipeline)
+10. [Streamlit-Oberfläche](#streamlit-oberfläche)
+11. [Modelltraining](#modelltraining)
+12. [Modellevaluation](#modellevaluation)
+13. [Einzelvorhersage testen](#einzelvorhersage-testen)
+14. [Ablage und Ausgabedateien](#ablage-und-ausgabedateien)
+15. [Bekannte Einschränkungen](#bekannte-einschränkungen)
+16. [Weiterentwicklung](#weiterentwicklung)
 
 ## Funktionsumfang
 Der Prototyp umfasst die folgenden Funktionen:
@@ -89,6 +90,64 @@ project-root/
     ├── ticket-impact/
     └── ticket-prio/
 ```
+
+## Systemübersicht des Prototyps
+```mermaid
+flowchart LR
+
+  subgraph IN["Eingangsverarbeitung"]
+    direction TB
+    outlook["Outlook-Postfach"]
+    reader["outlook_reader.py"]
+    main["main.py"]
+    pre["preprocessing.py"]
+  end
+
+  subgraph KI["KI-Komponente"]
+    direction TB
+    predict["predict_ticket_classifier.py"]
+    models["Lokale BERT-Modelle"]
+    ticketbuild["Ticketaufbau"]
+  end
+
+  subgraph DATA["Dateibasierte Ablage"]
+    direction TB
+    emails["data/emails_inbox"]
+    tickets["data/tickets"]
+    errors["data/errors"]
+    state["data/state"]
+  end
+
+  subgraph UI["Prüfung und Freigabe"]
+    direction TB
+    streamlit["streamlit_ticket_ui.py"]
+    repo["streamlit_ticket_repository.py"]
+  end
+
+  subgraph OUT["RPA und Zielsystem"]
+    direction TB
+    rpa["RPA-Inbox"]
+    bp["Blue Prism"]
+    ados["Azure DevOps Server"]
+  end
+
+  outlook --> reader
+  reader --> main
+  main --> emails
+  emails --> pre
+  pre --> predict
+  predict --> models
+  predict --> ticketbuild
+  ticketbuild --> tickets
+  main --> errors
+  main --> state
+
+  streamlit --> repo
+  repo --> tickets
+  repo --> rpa
+  rpa --> bp
+  bp --> ados
+  ```
 
 ## Voraussetzungen
 Für die Ausführung des Prototyps sollten die folgenden Voraussetzungen erfüllt sein:
@@ -344,7 +403,6 @@ Mögliche Weiterentwicklungen des Prototyps sind unter anderem:
 - automatisierte Tests für Pipeline, Vorverarbeitung und UI
 
 ---
-
 ## Autor und Kontext
 
 Dieses Repository dokumentiert einen im Rahmen einer Bachelorarbeit entwickelten Prototypen zur automatisierten Vorverarbeitung eingehender E-Mails und zur strukturierten Ticketvorbefüllung für Azure DevOps Server.
