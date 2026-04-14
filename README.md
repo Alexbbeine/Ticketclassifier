@@ -121,7 +121,7 @@ flowchart TB
       build["Ticketaufbau in main.py<br/>Iteration aus Release-Kalender"]
 
       predict --> models
-      predict -->|Vorhersagen + Konfidenzen| build
+      models -->|Vorhersagen + Konfidenzen| build
     end
 
     subgraph UI["Human-in-the-Loop und Freigabe"]
@@ -135,7 +135,7 @@ flowchart TB
     subgraph OUT["RPA und Zielsystem"]
       direction TB
       inbox["RPA-Inbox<br/>freigegebene TICKET-JSON"]
-      bp["Blue Prism<br/>regelbasierte Ticketanlage"]
+      bp["RPA-Bot<br/>regelbasierte Ticketanlage"]
       ados["Azure DevOps Server"]
 
       inbox --> bp --> ados
