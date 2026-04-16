@@ -2,6 +2,7 @@ import argparse
 import traceback
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from time import perf_counter
 
 from config import (
     DEFAULT_ENVIRONMENT,
@@ -127,6 +128,7 @@ def build_inbox_record(email: dict) -> dict:
             "stored_in_inbox": True,
             "ticket_created": False,
         },
+        "timing": dict(email.get("timing", {})),
     }
 
 
@@ -137,6 +139,7 @@ def build_ticket_record(
     processed: dict,
     classifications: dict,
     predicted_ticket: dict,
+    timing: dict | None = None,
 ) -> dict:
     return {
         "email": {
@@ -151,6 +154,7 @@ def build_ticket_record(
         "ticket": build_ticket(inbox_record, processed, predicted_ticket),
         "classification": classifications,
         "preprocessing": processed.get("preprocessing", {}),
+            "timing": timing or {},
         "meta": {
             "source": inbox_record.get("meta", {}).get("source", "outlook_desktop"),
             "message_id": inbox_record.get("meta", {}).get("message_id", "UNKNOWN_MESSAGE_ID"),
@@ -300,19 +304,37 @@ def classify_pending_emails() -> dict:
             message_id = inbox_record.get("meta", {}).get("message_id", "UNKNOWN_MESSAGE_ID")
             received_utc = inbox_record.get("email", {}).get("received_utc", utc_now_iso())
 
+            classification_started_at_utc = utc_now_iso()
+            classification_started = perf_counter()
+
+            preprocessing_started = perf_counter()
+            processed = get_processed_payload(inbox_record)
+            preprocessing_seconds = round(perf_counter() - preprocessing_started, 6)
+
             if message_id in ticketed_ids:
                 summary["skipped"] += 1
                 print(f"[SKIP][CLASSIFY] Ticket bereits vorhanden: {message_id}")
                 continue
-
+            
             processed = get_processed_payload(inbox_record)
             text_for_classification = processed.get("text_for_classification", "")
 
             if not text_for_classification.strip():
                 raise ValueError("Der klassifizierbare Text ist leer.")
-
+            
+            inference_started = perf_counter()
             classifications = classify_email_text(text_for_classification, classifiers)
+            inference_seconds = round(perf_counter() - inference_started, 6)
             predicted_ticket = build_predicted_ticket(classifications)
+
+            timing = dict(inbox_record.get("timing", {}))
+            timing["classification_started_at_utc"] = classification_started_at_utc
+            timing["preprocessing_duration_seconds"] = preprocessing_seconds
+            timing["model_inference_duration_seconds"] = inference_seconds
+            timing["classification_finished_at_utc"] = utc_now_iso()
+            timing["classification_duration_seconds"] = round(
+                perf_counter() - classification_started, 6
+            )
 
             ticket_record = build_ticket_record(
                 inbox_record=inbox_record,
@@ -320,6 +342,7 @@ def classify_pending_emails() -> dict:
                 processed=processed,
                 classifications=classifications,
                 predicted_ticket=predicted_ticket,
+                timing=timing,
             )
 
             ticket_path = save_ticket_json(

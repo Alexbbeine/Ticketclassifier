@@ -4,6 +4,8 @@ import win32com.client
 
 from config import MAILBOX_SMTP, TARGET_FOLDER, MAX_MESSAGES, UNREAD_ONLY
 
+from time import perf_counter
+
 PR_INTERNET_MESSAGE_ID = "http://schemas.microsoft.com/mapi/proptag/0x1035001E"
 
 # Outlook-Zeitstempel in ein einheitliches UTC-ISO-Format überführen, damit die weitere Verarbeitung systemunabhängig bleibt.
@@ -13,6 +15,8 @@ def to_utc_iso(dt) -> str:
         dt = dt.replace(tzinfo=local_tz)
     return dt.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
 
+def utc_now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
 # Liefert die tatsächliche SMTP-Adresse des Absenders.
 def get_sender_smtp(item) -> str:
@@ -60,12 +64,21 @@ def fetch_emails() -> list[dict]:
             continue
 
         try:
+            item_started_at_utc = utc_now_iso()
+            item_started = perf_counter()
+
             email_data = {
                 "subject": str(getattr(item, "Subject", "") or ""),
                 "sender": get_sender_smtp(item),
                 "received_utc": to_utc_iso(item.ReceivedTime),
                 "body": str(getattr(item, "Body", "") or ""),
                 "message_id": get_message_id(item),
+            }
+
+            email_data["timing"] = {
+                "fetch_started_at_utc": item_started_at_utc,
+                "fetch_finished_at_utc": utc_now_iso(),
+                "fetch_duration_seconds": round(perf_counter() - item_started, 6),
             }
 
             emails.append(email_data)

@@ -345,10 +345,13 @@ def move_tickets_to_rpa_inbox(
                     f"Im Zielordner existiert bereits eine Datei mit dem Namen {destination_path.name}."
                 )
 
+            submitted_at_utc = utc_now_iso()
             meta = record.setdefault("meta", {})
             status = record.setdefault("status", {})
-            meta["submitted_to_rpa_at_utc"] = utc_now_iso()
+            timing = record.setdefault("timing", {})
+            meta["submitted_to_rpa_at_utc"] = submitted_at_utc
             meta["rpa_target_path"] = str(destination_directory)
+            timing["submitted_to_rpa_at_utc"] = submitted_at_utc
             status["submitted_to_rpa"] = True
 
             write_json_atomic(source_path, record)
